@@ -1,0 +1,138 @@
+:root {
+    --primary: #2c3e50;
+    --secondary: #3498db;
+    --light-bg: #f7f9fc;
+    --card-bg: #ffffff;
+    --text: #2f4f70;
+    --danger: #d63031;
+    --success: #2ecc71;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--text);
+    background: var(--light-bg);
+}
+
+.app-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-header {
+    background: var(--primary);
+    color: white;
+    padding: 10px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.app-header h1 {
+    margin: 0;
+    font-size: 1.4rem;
+}
+
+nav a {
+    color: white;
+    margin-right: 15px;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+nav a.active {
+    text-decoration: underline;
+}
+
+main {
+    flex: 1;
+    padding: 16px 24px;
+}
+
+.app-footer {
+    text-align: center;
+    padding: 12px 0;
+    font-size: .9rem;
+    background: #e9f1fa;
+}
+
+.card {
+    background: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 1px 10px rgba(0, 0, 0, .1);
+    padding: 20px;
+    max-width: 700px;
+    margin: 0 auto 20px auto;
+}
+
+label {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 550;
+}
+
+input,
+textarea {
+    width: 100%;
+    margin-top: 6px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+button {
+    background: var(--secondary);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+button:disabled {
+    background: #889db5;
+    cursor: not-allowed;
+}
+
+.job-list {
+    display: grid;
+    gap: 14px;
+}
+
+.job-card {
+    border: 1px solid #cdd4dc;
+    border-radius: 8px;
+    background: white;
+    padding: 14px;
+}
+
+.job-card h3 {
+    margin-top: 0;
+}
+
+.job-card .button {
+    display: inline-block;
+    margin-top: 10px;
+    background: var(--secondary);
+    color: white;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+
+.success {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.error {
+    color: var(--danger);
+    font-weight: 600;
+}
