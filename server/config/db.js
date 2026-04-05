@@ -6,12 +6,19 @@ const connectDB = async () => {
         throw new Error('MONGO_URI is not defined in environment variables');
     }
 
-    await mongoose.connect(mongoUri, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
+    mongoose.connection.on('connected', () => {
+        console.log('MongoDB connected successfully');
     });
 
-    console.log('MongoDB connected successfully');
+    mongoose.connection.on('error', (err) => {
+        console.error('MongoDB connection error:', err?.message || err);
+    });
+
+    await mongoose.connect(mongoUri, {
+        serverSelectionTimeoutMS: 10000,
+        connectTimeoutMS: 10000,
+    });
+
 };
 
 module.exports = connectDB;

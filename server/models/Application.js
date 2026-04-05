@@ -1,29 +1,31 @@
 const mongoose = require('mongoose');
 
 const applicationSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+        index: true,
+    },
     jobId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Job',
         required: true,
+        index: true,
     },
-    name: {
+    status: {
         type: String,
+        enum: ['applied', 'shortlisted', 'rejected'],
+        default: 'applied',
         required: true,
-        trim: true,
-    },
-    email: {
-        type: String,
-        required: true,
-        lowercase: true,
-        trim: true,
-        match: [/^\S+@\S+\.\S+$/, 'Please use a valid email address'],
     },
     resume: {
         type: String,
-        required: true,
         trim: true,
-        match: [/^https?:\/\/.+/, 'Please provide a valid URL for resume'],
+        default: '',
     },
 }, { timestamps: true });
+
+applicationSchema.index({ userId: 1, jobId: 1 }, { unique: true });
 
 module.exports = mongoose.model('Application', applicationSchema);

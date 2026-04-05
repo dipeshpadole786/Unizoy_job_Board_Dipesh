@@ -5,11 +5,13 @@ import Login from './pages/Login';
 import Home from './pages/Home';
 import Admin from './pages/Admin';
 import Apply from './pages/Apply';
+import MyApplications from './pages/MyApplications';
+import AdminApplications from './pages/AdminApplications';
 
 function App() {
     return (
         <div className="min-h-screen bg-gray-100">
-
+            <Navbar />
             <main className="container mx-auto p-4">
                 <Routes>
                     <Route path="/login" element={<Login />} />
@@ -22,10 +24,26 @@ function App() {
                         }
                     />
                     <Route
+                        path="/my-applications"
+                        element={
+                            <ProtectedRoute requiredRole="user">
+                                <MyApplications />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
                         path="/admin"
                         element={
                             <ProtectedRoute requiredRole="admin">
                                 <Admin />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin/jobs/:jobId/applications"
+                        element={
+                            <ProtectedRoute requiredRole="admin">
+                                <AdminApplications />
                             </ProtectedRoute>
                         }
                     />

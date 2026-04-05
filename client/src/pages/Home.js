@@ -1,272 +1,165 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api';
+import { useToast } from '../components/ToastProvider';
+import { getRole } from '../utils/auth';
 
 function Home() {
-    const [jobs, setJobs] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+  const [jobs, setJobs] = useState([]);
+  const [myApplications, setMyApplications] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-    useEffect(() => {
-        const fetchJobs = async () => {
-            setLoading(true);
-            setError('');
-            try {
-                const response = await api.get('/jobs');
-                setJobs(response.data);
-            } catch (err) {
-                setError(err.response?.data?.message || 'Failed to load jobs');
-            } finally {
-                setLoading(false);
-            }
-        };
+  const toast = useToast();
+  const role = getRole();
 
-        fetchJobs();
-    }, []);
+  const myAppByJobId = useMemo(() => {
+    const map = new Map();
+    myApplications.forEach((a) => {
+      const key = a?.jobId?._id || a?.jobId;
+      if (key) map.set(String(key), a);
+    });
+    return map;
+  }, [myApplications]);
 
-    const styles = {
-        container: {
-            minHeight: '100vh',
-            background: '#f5f7fa',
-        },
-        navbar: {
-            background: 'white',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            padding: '1rem 2rem',
-            position: 'sticky',
-            top: 0,
-            zIndex: 1000,
-        },
-        navContent: {
-            maxWidth: '1280px',
-            margin: '0 auto',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-        },
-        logo: {
-            fontSize: '1.5rem',
-            fontWeight: 'bold',
-            color: '#3b82f6',
-        },
-        logoutBtn: {
-            background: '#ef4444',
-            color: 'white',
-            padding: '0.5rem 1rem',
-            border: 'none',
-            borderRadius: '0.5rem',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-        },
-        main: {
-            maxWidth: '1280px',
-            margin: '0 auto',
-            padding: '2rem',
-        },
-        header: {
-            marginBottom: '2rem',
-        },
-        title: {
-            fontSize: '2rem',
-            fontWeight: '700',
-            color: '#111827',
-            marginBottom: '0.5rem',
-        },
-        subtitle: {
-            color: '#6b7280',
-            fontSize: '1rem',
-        },
-        stats: {
-            display: 'flex',
-            gap: '1rem',
-            marginTop: '1rem',
-        },
-        statCard: {
-            background: 'white',
-            padding: '0.75rem 1.5rem',
-            borderRadius: '0.5rem',
-            border: '1px solid #e5e7eb',
-        },
-        statNumber: {
-            fontSize: '1.5rem',
-            fontWeight: '700',
-            color: '#3b82f6',
-        },
-        statLabel: {
-            fontSize: '0.875rem',
-            color: '#6b7280',
-        },
-        loadingContainer: {
-            textAlign: 'center',
-            padding: '4rem',
-        },
-        loader: {
-            border: '3px solid #e5e7eb',
-            borderTop: '3px solid #3b82f6',
-            borderRadius: '50%',
-            width: '40px',
-            height: '40px',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto',
-        },
-        errorContainer: {
-            background: '#fee',
-            border: '1px solid #fcc',
-            borderRadius: '0.5rem',
-            padding: '1rem',
-            color: '#c33',
-            textAlign: 'center',
-        },
-        emptyContainer: {
-            textAlign: 'center',
-            padding: '4rem',
-            background: 'white',
-            borderRadius: '0.5rem',
-        },
-        jobsGrid: {
-            display: 'grid',
-            gap: '1.5rem',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-        },
-        jobCard: {
-            background: 'white',
-            borderRadius: '0.5rem',
-            overflow: 'hidden',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            transition: 'transform 0.2s, box-shadow 0.2s',
-        },
-        jobCardHeader: {
-            padding: '1rem 1.5rem',
-            borderBottom: '1px solid #e5e7eb',
-        },
-        jobTitle: {
-            fontSize: '1.25rem',
-            fontWeight: '600',
-            color: '#111827',
-            margin: 0,
-        },
-        jobCardBody: {
-            padding: '1.5rem',
-        },
-        jobDescription: {
-            color: '#4b5563',
-            lineHeight: '1.5',
-            marginBottom: '1rem',
-        },
-        jobLocation: {
-            fontSize: '0.875rem',
-            color: '#6b7280',
-            marginBottom: '1rem',
-        },
-        applyButton: {
-            display: 'inline-block',
-            background: '#3b82f6',
-            color: 'white',
-            padding: '0.5rem 1rem',
-            borderRadius: '0.5rem',
-            textDecoration: 'none',
-            fontSize: '0.875rem',
-            fontWeight: '500',
-            textAlign: 'center',
-            width: '100%',
-        },
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const requests = [api.get('/jobs')];
+        if (role === 'user') requests.push(api.get('/applications/my'));
+
+        const [jobsRes, myAppsRes] = await Promise.all(requests);
+        setJobs(jobsRes.data || []);
+        setMyApplications(myAppsRes?.data || []);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to load jobs');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('role');
-        window.location.href = '/login';
-    };
+    fetchData();
+  }, [role]);
 
-    return (
-        <div style={styles.container}>
-            <nav style={styles.navbar}>
-                <div style={styles.navContent}>
-                    <div style={styles.logo}>JobPortal</div>
-                    <button onClick={handleLogout} style={styles.logoutBtn}>
-                        Logout
-                    </button>
-                </div>
-            </nav>
+  const handleApply = async (jobId) => {
+    try {
+      const res = await api.post('/applications/apply', { jobId });
+      setMyApplications((prev) => [res.data.application, ...prev]);
+      toast.success('Application submitted');
+    } catch (err) {
+      if (err?.response?.status === 409) {
+        toast.info('You already applied for this job');
+        try {
+          const appsRes = await api.get('/applications/my');
+          setMyApplications(appsRes.data || []);
+        } catch {
+          // ignore
+        }
+        return;
+      }
+      toast.error(err.response?.data?.message || 'Failed to apply');
+    }
+  };
 
-            <div style={styles.main}>
-                <div style={styles.header}>
-                    <h1 style={styles.title}>Available Job Listings</h1>
-                    <p style={styles.subtitle}>Find your dream job and take the next step in your career</p>
-                    {!loading && jobs.length > 0 && (
-                        <div style={styles.stats}>
-                            <div style={styles.statCard}>
-                                <div style={styles.statNumber}>{jobs.length}</div>
-                                <div style={styles.statLabel}>Open Positions</div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {loading && (
-                    <div style={styles.loadingContainer}>
-                        <div style={styles.loader}></div>
-                        <p style={{ marginTop: '1rem', color: '#6b7280' }}>Loading jobs...</p>
-                    </div>
-                )}
-
-                {error && (
-                    <div style={styles.errorContainer}>
-                        ⚠️ {error}
-                    </div>
-                )}
-
-                {!loading && jobs.length === 0 && !error && (
-                    <div style={styles.emptyContainer}>
-                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📭</div>
-                        <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.5rem' }}>No Jobs Available</h3>
-                        <p style={{ color: '#6b7280' }}>No jobs posted yet. Please check back later!</p>
-                    </div>
-                )}
-
-                {!loading && jobs.length > 0 && (
-                    <div style={styles.jobsGrid}>
-                        {jobs.map((job) => (
-                            <div
-                                key={job._id}
-                                style={styles.jobCard}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(-4px)';
-                                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-                                }}
-                            >
-                                <div style={styles.jobCardHeader}>
-                                    <h3 style={styles.jobTitle}>{job.title}</h3>
-                                </div>
-                                <div style={styles.jobCardBody}>
-                                    <p style={styles.jobDescription}>{job.description}</p>
-                                    <p style={styles.jobLocation}>📍 {job.location}</p>
-                                    <Link
-                                        to={`/apply/${job._id}`}
-                                        style={styles.applyButton}
-                                        onMouseEnter={(e) => e.target.style.background = '#2563eb'}
-                                        onMouseLeave={(e) => e.target.style.background = '#3b82f6'}
-                                    >
-                                        Apply Now →
-                                    </Link>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            <style>{`
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-            `}</style>
+  return (
+    <div style={{ minHeight: 'calc(100vh - 140px)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, marginBottom: 18 }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: '#111827' }}>Jobs</h1>
+          <p style={{ margin: '6px 0 0', color: '#6b7280' }}>Browse listings and apply in one click</p>
         </div>
-    );
+        {role === 'user' ? (
+          <Link to="/my-applications" className="bg-white rounded-lg shadow-md p-4 inline-block transition-colors">
+            View My Applications →
+          </Link>
+        ) : null}
+      </div>
+
+      {loading ? (
+        <div className="loader">Loading...</div>
+      ) : error ? (
+        <div style={{ background: '#fee', border: '1px solid #fcc', borderRadius: 12, padding: 12, color: '#b91c1c' }}>
+          {error}
+        </div>
+      ) : jobs.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-md p-6 text-center">
+          <div style={{ fontSize: 44, marginBottom: 10 }}>📭</div>
+          <div style={{ fontWeight: 700, fontSize: 18 }}>No jobs available</div>
+          <div style={{ marginTop: 6, color: '#6b7280' }}>Please check back later.</div>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
+          {jobs.map((job) => {
+            const app = myAppByJobId.get(String(job._id));
+            const applied = Boolean(app);
+            const status = app?.status || '';
+
+            return (
+              <div key={job._id} className="bg-white rounded-lg shadow-md p-6">
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{job.title}</div>
+                    <div style={{ marginTop: 4, color: '#6b7280', fontSize: 14 }}>
+                      {(job.company || '—')} • {job.location}
+                    </div>
+                  </div>
+                  {applied ? (
+                    <div style={{
+                      height: 28,
+                      padding: '0 10px',
+                      borderRadius: 999,
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      background: status === 'shortlisted' ? '#ecfdf5' : status === 'rejected' ? '#fef2f2' : '#eff6ff',
+                      border: `1px solid ${status === 'shortlisted' ? '#34d399' : status === 'rejected' ? '#f87171' : '#60a5fa'}`,
+                      color: status === 'shortlisted' ? '#065f46' : status === 'rejected' ? '#7f1d1d' : '#1e3a8a',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {status.toUpperCase()}
+                    </div>
+                  ) : null}
+                </div>
+
+                <p style={{ marginTop: 10, marginBottom: 14, color: '#374151', lineHeight: 1.5 }}>
+                  {job.description}
+                </p>
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <Link
+                    to={`/apply/${job._id}`}
+                    className="bg-white border rounded-md px-4 py-2 focus:outline-none focus:ring-2"
+                    style={{ flex: 1, textAlign: 'center' }}
+                  >
+                    Details
+                  </Link>
+
+                  {role === 'user' ? (
+                    <button
+                      onClick={() => handleApply(job._id)}
+                      disabled={applied}
+                      className="bg-blue-600 text-white rounded-md px-4 py-2 transition-colors"
+                      style={{
+                        flex: 1,
+                        opacity: applied ? 0.6 : 1,
+                        cursor: applied ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      {applied ? 'Applied' : 'Apply'}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default Home;
+

@@ -6,6 +6,11 @@ const jobSchema = new mongoose.Schema({
         required: true,
         trim: true,
     },
+    company: {
+        type: String,
+        trim: true,
+        default: '',
+    },
     description: {
         type: String,
         required: true,
@@ -15,6 +20,11 @@ const jobSchema = new mongoose.Schema({
         type: String,
         required: true,
         trim: true,
+    },
+    createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false,
     },
 }, { timestamps: true });
 
