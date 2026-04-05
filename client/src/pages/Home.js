@@ -9,6 +9,9 @@ function Home() {
   const [myApplications, setMyApplications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [applyJobId, setApplyJobId] = useState('');
+  const [resumeLink, setResumeLink] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const toast = useToast();
   const role = getRole();
@@ -43,11 +46,24 @@ function Home() {
     fetchData();
   }, [role]);
 
-  const handleApply = async (jobId) => {
+  const handleApply = async (jobId, resume) => {
+    const trimmed = (resume || '').trim();
+    if (!trimmed) {
+      toast.error('Resume link is required');
+      return;
+    }
+    if (!/^https?:\/\/.+/i.test(trimmed)) {
+      toast.error('Please enter a valid resume URL (http/https)');
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      const res = await api.post('/applications/apply', { jobId });
+      const res = await api.post('/applications/apply', { jobId, resume: trimmed });
       setMyApplications((prev) => [res.data.application, ...prev]);
       toast.success('Application submitted');
+      setApplyJobId('');
+      setResumeLink('');
     } catch (err) {
       if (err?.response?.status === 409) {
         toast.info('You already applied for this job');
@@ -57,9 +73,13 @@ function Home() {
         } catch {
           // ignore
         }
+        setApplyJobId('');
+        setResumeLink('');
         return;
       }
       toast.error(err.response?.data?.message || 'Failed to apply');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -139,7 +159,10 @@ function Home() {
 
                   {role === 'user' ? (
                     <button
-                      onClick={() => handleApply(job._id)}
+                      onClick={() => {
+                        setApplyJobId(job._id);
+                        setResumeLink('');
+                      }}
                       disabled={applied}
                       className="bg-blue-600 text-white rounded-md px-4 py-2 transition-colors"
                       style={{
@@ -152,6 +175,40 @@ function Home() {
                     </button>
                   ) : null}
                 </div>
+
+                {role === 'user' && !applied && applyJobId === job._id ? (
+                  <div style={{ marginTop: 12, borderTop: '1px solid #f3f4f6', paddingTop: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: '#374151', marginBottom: 8 }}>
+                      Add resume link
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <input
+                        value={resumeLink}
+                        onChange={(e) => setResumeLink(e.target.value)}
+                        placeholder="https://drive.google.com/your-resume"
+                        className="border rounded-md w-full px-4 py-2 focus:outline-none focus:ring-2"
+                        style={{ flex: 1, minWidth: 240 }}
+                      />
+                      <button
+                        onClick={() => handleApply(job._id, resumeLink)}
+                        disabled={submitting}
+                        className="bg-blue-600 text-white rounded-md px-4 py-2 transition-colors"
+                        style={{ opacity: submitting ? 0.7 : 1, cursor: submitting ? 'not-allowed' : 'pointer' }}
+                      >
+                        {submitting ? 'Submitting...' : 'Submit'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setApplyJobId('');
+                          setResumeLink('');
+                        }}
+                        className="bg-white border rounded-md px-4 py-2 focus:outline-none focus:ring-2"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             );
           })}
@@ -162,4 +219,3 @@ function Home() {
 }
 
 export default Home;
-

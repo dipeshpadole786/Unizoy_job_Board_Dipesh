@@ -4,7 +4,7 @@ const Job = require('../models/Job');
 
 const applyToJob = async (req, res, next) => {
   try {
-    const { jobId } = req.body;
+    const { jobId, resume } = req.body;
     const userId = req.user?._id;
 
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
@@ -15,10 +15,13 @@ const applyToJob = async (req, res, next) => {
     const job = await Job.findById(jobId).select('_id');
     if (!job) return res.status(404).json({ message: 'Job not found' });
 
-    const resume = (req.user.resume || '').trim();
+    const resumeLink = typeof resume === 'string' ? resume.trim() : '';
+    if (resumeLink && !/^https?:\/\/.+/i.test(resumeLink)) {
+      return res.status(400).json({ message: 'Please provide a valid resume URL (http/https)' });
+    }
 
     try {
-      const created = await Application.create({ userId, jobId, resume });
+      const created = await Application.create({ userId, jobId, resume: resumeLink });
       return res.status(201).json({ message: 'Applied successfully', application: created });
     } catch (err) {
       if (err?.code === 11000) {
@@ -96,4 +99,3 @@ module.exports = {
   getApplicationsByJob,
   updateApplicationStatus,
 };
-

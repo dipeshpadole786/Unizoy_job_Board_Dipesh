@@ -11,6 +11,7 @@ function Apply() {
   const [loading, setLoading] = useState(false);
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState('');
+  const [resumeLink, setResumeLink] = useState('');
 
   const toast = useToast();
   const role = getRole();
@@ -40,11 +41,22 @@ function Apply() {
   }, [jobId, role]);
 
   const handleApply = async () => {
+    const trimmed = resumeLink.trim();
+    if (!trimmed) {
+      toast.error('Resume link is required');
+      return;
+    }
+    if (!/^https?:\/\/.+/i.test(trimmed)) {
+      toast.error('Please enter a valid resume URL (http/https)');
+      return;
+    }
+
     setApplying(true);
     try {
-      const res = await api.post('/applications/apply', { jobId });
+      const res = await api.post('/applications/apply', { jobId, resume: trimmed });
       setMyApplications((prev) => [res.data.application, ...prev]);
       toast.success('Application submitted');
+      setResumeLink('');
     } catch (err) {
       if (err?.response?.status === 409) {
         toast.info('You already applied for this job');
@@ -111,19 +123,47 @@ function Apply() {
           </Link>
 
           {role === 'user' ? (
-            <button
-              onClick={handleApply}
-              disabled={Boolean(myApp) || applying}
-              className="bg-blue-600 text-white rounded-md px-4 py-2 transition-colors"
-              style={{
-                marginLeft: 'auto',
-                opacity: (myApp || applying) ? 0.65 : 1,
-                cursor: (myApp || applying) ? 'not-allowed' : 'pointer',
-                minWidth: 160,
-              }}
-            >
-              {myApp ? 'Already Applied' : applying ? 'Applying...' : 'Apply'}
-            </button>
+            <div style={{ marginLeft: 'auto', minWidth: 320 }}>
+              {!myApp ? (
+                <>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#374151', marginBottom: 6 }}>
+                    Resume link
+                  </div>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <input
+                      value={resumeLink}
+                      onChange={(e) => setResumeLink(e.target.value)}
+                      placeholder="https://drive.google.com/your-resume"
+                      className="border rounded-md w-full px-4 py-2 focus:outline-none focus:ring-2"
+                    />
+                    <button
+                      onClick={handleApply}
+                      disabled={applying}
+                      className="bg-blue-600 text-white rounded-md px-4 py-2 transition-colors"
+                      style={{
+                        opacity: applying ? 0.65 : 1,
+                        cursor: applying ? 'not-allowed' : 'pointer',
+                        minWidth: 120,
+                      }}
+                    >
+                      {applying ? 'Applying...' : 'Apply'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <button
+                  disabled
+                  className="bg-blue-600 text-white rounded-md px-4 py-2 transition-colors"
+                  style={{
+                    width: '100%',
+                    opacity: 0.65,
+                    cursor: 'not-allowed',
+                  }}
+                >
+                  Already Applied
+                </button>
+              )}
+            </div>
           ) : null}
         </div>
       </div>
@@ -141,4 +181,3 @@ function Apply() {
 }
 
 export default Apply;
-
